@@ -1,6 +1,7 @@
 import os
 import random
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from telegram import (
@@ -119,7 +120,15 @@ JOIN_TEXT = (
 )
 
 
+ERROR_TEXT = (
+    "⚠️ <b>Verification error</b>\n\n"
+    "I couldn't check your membership. The bot owner must make this bot an "
+    "<b>Admin</b> in " + FORCE_CHANNEL + "."
+)
+
+
 async def is_joined(bot, user_id):
+    """True = joined, False = not joined, None = check failed (bot not admin etc.)"""
     try:
         m = await bot.get_chat_member(FORCE_CHANNEL, user_id)
         return m.status in (
@@ -129,13 +138,17 @@ async def is_joined(bot, user_id):
         )
     except Exception as e:
         print("Join check error (is the bot admin in the channel?):", e)
-        return False
+        return None
 
 
 async def gate(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
     user = update.effective_user
-    if user and await is_joined(context.bot, user.id):
+    joined = await is_joined(context.bot, user.id) if user else False
+    if joined:
         return True
+    if joined is None:
+        await update.effective_message.reply_text(ERROR_TEXT, parse_mode=ParseMode.HTML)
+        return False
     await update.effective_message.reply_text(
         JOIN_TEXT, parse_mode=ParseMode.HTML, reply_markup=join_kb()
     )
@@ -194,25 +207,58 @@ async def addchannel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def check_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    if await is_joined(context.bot, q.from_user.id):
+    joined = await is_joined(context.bot, q.from_user.id)
+    if joined:
         await q.answer("✅ Verified!")
         await q.message.edit_text(
             WELCOME, parse_mode=ParseMode.HTML, reply_markup=main_kb(context.bot.username)
+        )
+    elif joined is None:
+        await q.answer(
+            "⚠️ Bot must be Admin in " + FORCE_CHANNEL + " to verify. Tell the bot owner.",
+            show_alert=True,
         )
     else:
         await q.answer("❌ You haven't joined yet! Join first, then tap again.", show_alert=True)
 
 
 # ---------- reactions ----------
+_allowed_cache = {}
+
+
+async def pick_emoji(bot, chat_id, chat_type):
+    """Pick a random emoji the chat actually allows (channels can restrict reactions)."""
+    if chat_type == ChatType.PRIVATE:
+        return random.choice(EMOJIS)
+    cached = _allowed_cache.get(chat_id)
+    if not cached or time.time() - cached[0] > 600:
+        allowed = None  # None = all emojis allowed
+        try:
+            chat = await bot.get_chat(chat_id)
+            ar = chat.available_reactions
+            if ar is not None:
+                allowed = [r.emoji for r in ar if isinstance(r, ReactionTypeEmoji)]
+        except Exception as e:
+            print("get_chat error:", e)
+        cached = (time.time(), allowed)
+        _allowed_cache[chat_id] = cached
+    allowed = cached[1]
+    pool = EMOJIS if allowed is None else allowed
+    return random.choice(pool) if pool else None
+
+
 async def react(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.effective_message
     if not msg:
         return
     try:
+        emoji = await pick_emoji(context.bot, msg.chat_id, msg.chat.type)
+        if not emoji:
+            return
         await context.bot.set_message_reaction(
             chat_id=msg.chat_id,
             message_id=msg.message_id,
-            reaction=[ReactionTypeEmoji(random.choice(EMOJIS))],
+            reaction=[ReactionTypeEmoji(emoji)],
         )
     except Exception as e:
         print("Reaction error:", e)
@@ -234,7 +280,7 @@ async def on_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
     now_in = r.new_chat_member.status in active
     if now_in and not was_in:
         user = r.from_user
-        if not await is_joined(context.bot, user.id):
+        if await is_joined(context.bot, user.id) is False:
             try:
                 await context.bot.send_message(
                     user.id, JOIN_TEXT, parse_mode=ParseMode.HTML, reply_markup=join_kb()
