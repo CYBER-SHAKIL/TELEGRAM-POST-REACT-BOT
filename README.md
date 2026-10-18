@@ -26,7 +26,7 @@ A simple Telegram bot that instantly reacts to every new post in a group or chan
 ### 2. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git clone https://github.com/CYBER-SHAKIL/TELEGRAM-POST-REACT-BOT.git
 cd YOUR_REPO
 pip install -r requirements.txt
 ```
