@@ -1,92 +1,208 @@
 # 🤖 Telegram Auto Reaction Bot
 
-A simple Telegram bot that instantly reacts to every new post in a group or channel with a random emoji.
+A Telegram bot that **instantly reacts to every new post** with a random emoji in **groups, channels and inbox (private chat)**.
 
 ## ✨ Features
 
-- Reacts instantly to every new message in groups and channels
-- Picks a random emoji from Telegram's supported reaction list
-- Lightweight and easy to deploy
-- Token is loaded from an environment variable (safe for public repos)
+- ⚡ Instant random emoji reaction on every new post
+- 👥 Works in **groups**, 📢 **channels** and 💬 **inbox**
+- 🖼 Reacts to everything: text, photo, video, voice, PDF, files, etc.
+- 🎯 Respects the chat's allowed reactions (works even if a channel restricts emojis)
+- 👋 `/start` guide with **Add to Group / Add to Channel** buttons
+- 🔒 **Force-join**: users must join your channel before using the bot
+- 🔑 Token stored safely in an environment variable
 
-## 📋 Requirements
+## 💬 Commands
 
-- Python 3.9+
-- A Telegram bot token from [@BotFather](https://t.me/BotFather)
+| Command | Description |
+|---|---|
+| `/start` | Show the guide and add buttons |
+| `/addgroup` | Add the bot to a group |
+| `/addchannel` | Add the bot to a channel |
+| `/help` | How to use the bot |
+| `/about` | About the bot |
 
-## 🚀 Setup
+---
 
-### 1. Create the bot
+## 📁 Project Structure
+
+```
+├── bot.py              # Main bot code
+├── requirements.txt    # Python dependencies
+├── .python-version     # Python version for hosting
+├── Procfile            # Worker config (Railway etc.)
+├── .gitignore
+└── README.md
+```
+
+**requirements.txt**
+```
+python-telegram-bot==21.6
+```
+
+**.python-version**
+```
+3.12.8
+```
+
+**Procfile**
+```
+worker: python bot.py
+```
+
+**.gitignore**
+```
+.env
+__pycache__/
+```
+
+---
+
+## 🛠 Step 1: Create the bot
 
 1. Open [@BotFather](https://t.me/BotFather) and send `/newbot`
-2. Copy the bot token
-3. Send `/setprivacy` → select your bot → choose **Disable**
-   (otherwise the bot can't see all group messages)
+2. Choose a name and a username, then **copy the bot token**
+3. Send `/setprivacy` → select your bot → **Disable**
 
-### 2. Clone and install
+> ⚠️ Never put your token directly in the code or on GitHub. If it leaks, send `/revoke` to BotFather to get a new one.
+
+## 🔒 Step 2: Set up Force-Join (optional but included)
+
+The bot only works for users who joined your channel.
+
+1. Open `bot.py` and change these two lines to **your** channel:
+   ```python
+   FORCE_CHANNEL = "@YourChannelUsername"
+   FORCE_CHANNEL_URL = "https://t.me/YourChannelUsername"
+   ```
+2. **Add the bot as an Admin in that channel.**
+   Channel → Manage Channel → Administrators → Add Admin → select your bot.
+
+> Without this step the bot cannot check membership, and every user will be blocked.
+
+---
+
+## ☁️ Step 3: Deploy
+
+Fork or upload this repo to your GitHub first, then pick **one** option below.
+
+### Option A: Render (Web Service, free)
+
+1. Go to [render.com](https://render.com) → **New +** → **Web Service**
+2. Connect your GitHub repo
+3. Fill in the settings:
+
+   | Field | Value |
+   |---|---|
+   | Language | Python 3 |
+   | Build Command | `pip install -r requirements.txt` |
+   | Start Command | `python bot.py` |
+   | Instance Type | Free |
+
+4. Open **Environment** → **Add Environment Variable**:
+
+   | Key | Value |
+   |---|---|
+   | `BOT_TOKEN` | your bot token from BotFather |
+   | `PYTHON_VERSION` | `3.12.8` |
+
+5. Click **Create Web Service**. After the build finishes it should show **Live** ✅
+
+> 💡 The bot includes a tiny web server so Render can detect an open port.
+
+**Keep it awake 24/7 (free plan):**
+Render's free Web Service sleeps after 15 minutes without traffic. To prevent that:
+
+1. Create a free account on [uptimerobot.com](https://uptimerobot.com)
+2. **Add New Monitor** → type **HTTP(s)**
+3. URL: your Render URL (e.g. `https://your-bot.onrender.com`)
+4. Monitoring interval: **5 minutes**
+
+### Option B: Railway
+
+1. Go to [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**
+2. Open the **Variables** tab and add `BOT_TOKEN` = your token
+3. Railway uses the `Procfile` (`worker: python bot.py`) automatically
+4. Deploy ✅
+
+### Option C: Koyeb / other platforms
+
+- Build command: `pip install -r requirements.txt`
+- Run command: `python bot.py`
+- Environment variable: `BOT_TOKEN`
+- Set the Python version to **3.12**
+
+### Option D: VPS / your own PC
 
 ```bash
-git clone https://github.com/CYBER-SHAKIL/TELEGRAM-POST-REACT-BOT.git
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
 cd YOUR_REPO
 pip install -r requirements.txt
-```
 
-### 3. Set the bot token
-
-**Linux / macOS**
-```bash
+# Linux / macOS
 export BOT_TOKEN="your_bot_token_here"
-```
-
-**Windows (PowerShell)**
-```powershell
+# Windows (PowerShell)
 $env:BOT_TOKEN="your_bot_token_here"
-```
 
-### 4. Run
-
-```bash
 python bot.py
 ```
 
-## ➕ Add the bot to a group or channel
+To keep it running on a VPS, use `screen`, `tmux` or `pm2`.
 
-1. Add the bot to your group or channel
-2. Make it an **Admin** (required for reactions, and always required in channels)
-3. Send any message. The bot will react instantly 🎉
+---
 
-## ☁️ Deploy (24/7)
+## ➕ Step 4: Add the bot to your chats
 
-You can host it on [Railway](https://railway.app) or [Render](https://render.com):
+### Group
+1. Send `/start` to the bot and tap **Add to Group** (or add it manually)
+2. Make the bot an **Admin**
+3. Send any message. The bot reacts instantly 🎉
 
-1. Push this repo to GitHub
-2. Create a new project from the repo
-3. Add an environment variable: `BOT_TOKEN` = your token
-4. Set the start command to `python bot.py` (or use the included `Procfile` as a worker)
+### Channel
+1. Tap **Add to Channel** in the bot, or add it manually as an **Admin**
+2. Give it permission to **post/edit messages**
+3. Channel Settings → **Reactions** → make sure reactions are **enabled**
+4. Post anything. The bot reacts instantly 🎉
 
-## 🎨 Customize emojis
+### Inbox
+Just send any message to the bot and it will react.
 
-Edit the `EMOJIS` list in `bot.py`. Only Telegram's official reaction emojis work, for example:
+---
+
+## 🎨 Customize
+
+**Change emojis**: edit the `EMOJIS` list in `bot.py`. Only Telegram's official reaction emojis work:
 
 ```
 👍 🔥 ❤ 😁 🎉 🤩 👏 💯 😍 🥰 ⚡ 🏆 🤗 😎 🙏
 ```
 
-## 📁 Project structure
+**Change messages**: edit `WELCOME`, `HELP` and `ABOUT` at the top of `bot.py`.
 
-```
-├── bot.py             # Main bot code
-├── requirements.txt   # Python dependencies
-├── Procfile           # Worker config for hosting
-├── .gitignore
-└── README.md
-```
+---
+
+## 🧯 Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| `RuntimeError: There is no current event loop` | Python 3.14 is being used. Set `PYTHON_VERSION=3.12.8` (or add `.python-version`) and redeploy with **Clear build cache** |
+| `InvalidToken ... rejected by the server` | `BOT_TOKEN` is missing or wrong. Check the environment variable (no quotes, no spaces) |
+| Render stuck on **"No open ports detected"** | Make sure you are using the latest `bot.py` with the built-in web server, and the service type is **Web Service** |
+| "You haven't joined yet" even after joining | The bot is **not Admin** in your force-join channel. Add it as Admin |
+| Bot reacts in groups but not in channels | Bot must be **Admin** in the channel, and channel **Reactions** must be enabled. Remove the bot and add it again as Admin |
+| Bot doesn't react in a group | Disable privacy via `/setprivacy` in BotFather and make the bot Admin |
+| Bot stops after some time on Render free | Set up UptimeRobot (see Option A) |
+| `Reaction error` in logs | Check the log message. Usually the bot lacks permission or the emoji is not allowed in that chat |
+
+**Where to see logs:** Render → your service → **Logs** tab.
+
+---
 
 ## ⚠️ Notes
 
-- Never commit your bot token to GitHub
 - The bot cannot react to its own messages
-- Unsupported emojis will cause a reaction error
+- Reactions only work with Telegram's official emoji list
+- Never commit your bot token to GitHub
 
 ## 📄 License
 
