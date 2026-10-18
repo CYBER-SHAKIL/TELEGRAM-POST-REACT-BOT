@@ -135,7 +135,8 @@ Render's free Web Service sleeps after 15 minutes without traffic. To prevent th
 ### Option D: VPS / your own PC
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+git clone
+https://github.com/CYBER-SHAKIL/TELEGRAM-POST-REACT-BOT.git
 cd YOUR_REPO
 pip install -r requirements.txt
 
