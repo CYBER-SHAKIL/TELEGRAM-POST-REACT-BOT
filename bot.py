@@ -1,12 +1,25 @@
+import os
 import random
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from telegram import Update, ReactionTypeEmoji
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
-import os
 TOKEN = os.environ["BOT_TOKEN"]
 
-# Telegram er allowed reaction emoji list
 EMOJIS = ["👍", "🔥", "❤", "😁", "🎉", "🤩", "👏", "💯", "😍", "🥰", "⚡", "🏆", "🤗", "😎", "🙏"]
+
+class Ping(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"Bot is running")
+    def log_message(self, *args):
+        pass
+
+def run_server():
+    port = int(os.environ.get("PORT", 10000))
+    HTTPServer(("0.0.0.0", port), Ping).serve_forever()
 
 async def react(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.effective_message
@@ -22,6 +35,7 @@ async def react(update: Update, context: ContextTypes.DEFAULT_TYPE):
         print("Reaction error:", e)
 
 def main():
+    threading.Thread(target=run_server, daemon=True).start()
     app = Application.builder().token(TOKEN).build()
     app.add_handler(MessageHandler(
         (filters.ChatType.GROUPS | filters.ChatType.CHANNEL) & ~filters.COMMAND,
