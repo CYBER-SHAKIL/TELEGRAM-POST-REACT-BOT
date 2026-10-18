@@ -2,7 +2,8 @@ import random
 from telegram import Update, ReactionTypeEmoji
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
-TOKEN = "YOUR_BOT_TOKEN"
+import os
+TOKEN = os.environ["BOT_TOKEN"]
 
 # Telegram er allowed reaction emoji list
 EMOJIS = ["👍", "🔥", "❤", "😁", "🎉", "🤩", "👏", "💯", "😍", "🥰", "⚡", "🏆", "🤗", "😎", "🙏"]
